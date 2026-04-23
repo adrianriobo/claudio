@@ -51,7 +51,7 @@ CS_BUILD_ARGS = --build-arg CS_REF=$(CS_REF) --build-arg CS_REF_TYPE=$(CS_REF_TY
 .PHONY: oci-build oci-save oci-load oci-push-arch oci-manifest-build oci-manifest-push oci-tag oci-push
 
 oci-build:
-	${CONTAINER_MANAGER} build $(CS_BUILD_ARGS) -t $(IMAGE_NAME) .
+	${CONTAINER_MANAGER} build --no-cache $(CS_BUILD_ARGS) -t $(IMAGE_NAME) .
 
 oci-save:
 	${CONTAINER_MANAGER} save -m -o $(ARTIFACT_NAME).tar $(IMAGE_NAME)

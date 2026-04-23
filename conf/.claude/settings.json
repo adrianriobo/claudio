@@ -6,7 +6,20 @@
       "Skill(claudio-plugin:gitlab-job-analyzer)",
       "Skill(claudio-plugin:konflux-release)",
       "Skill(claudio-plugin:slack-utilities)",
-      "Bash(*)",
+      "Skill(claudio-plugin:jira-utilities)",
+      "Skill(claudio-plugin:jira-release-setup)",
+      "Skill(claudio-plugin:jira-sprint-manager)",
+      "Skill(claudio-plugin:jira-cve-tracker)",
+      "Skill(claudio-plugin:jira-gap-audit)",
+      "Bash(/home/claudio/claudio-skills/**)",
+      "mcp__plugin_mempalace_mempalace__mempalace_diary_write",
+      "mcp__plugin_mempalace_mempalace__mempalace_add_drawer",
+      "mcp__plugin_mempalace_mempalace__mempalace_kg_add",
+      "mcp__plugin_mempalace_mempalace__mempalace_status",
+      "mcp__plugin_mempalace_mempalace__mempalace_diary_read",
+      "mcp__plugin_mempalace_mempalace__mempalace_search",
+      "mcp__plugin_mempalace_mempalace__mempalace_hook_settings",
+      "mcp__plugin_mempalace_mempalace__mempalace_list_drawers",
       "Read(/home/claudio/.claude/**)"
     ],
     "deny": [],
@@ -22,5 +35,29 @@
   },
   "enabledPlugins": {
     "claudio-plugin@claudio-skills": true
+  },
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$MEMPAL_ENABLED\" != \"true\" ] && exit 0; /home/claudio/.claude/hooks/mempal_precompact_hook.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ \"$MEMPAL_ENABLED\" != \"true\" ] && exit 0; /home/claudio/.claude/hooks/mempal_save_hook.sh"
+          }
+        ]
+      }
+    ]
   }
 }

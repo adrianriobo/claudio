@@ -59,6 +59,9 @@ if [ -d "$HOME/workdir" ]; then
   cd "$HOME/workdir"
 fi
 
+# https://github.com/MemPalace/mempalace/issues/1093
+[ "$MEMPAL_ENABLED" != "true" ] && claude mcp add mempalace -- python -m mempalace.mcp_server
+
 # Generate CLAUDE.md with imports from context.d
 CLAUDE_MD="${HOME}/.claude/CLAUDE.md"
 : >"$CLAUDE_MD"

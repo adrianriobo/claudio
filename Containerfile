@@ -65,6 +65,9 @@ RUN microdnf install -y skopeo podman unzip gzip git; \
 # Claude
 # https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md
 ENV CLAUDE_V 2.1.117
+# MemPalace
+ENV MEMPALACE_V 3.3.2
+ENV MEMPAL_ENABLED="false"
 ENV CLAUDE_CODE_USE_VERTEX=1 \
     CLOUD_ML_REGION=us-east5 \
     ANTHROPIC_DEFAULT_HAIKU_MODEL=claude-haiku-4-5@20251001 \
@@ -98,6 +101,23 @@ RUN set -eux; \
     /usr/local/bin/generate-plugin-configs.sh \
         "${HOME}/claudio-skills" \
         "${HOME}/.claude/plugins"
+
+# MemPalace
+ENV MEMPAL_SAVE_INTERVAL 5
+RUN pip install --no-cache-dir MemPalace==${MEMPALACE_V}; \
+    mkdir -p ${HOME}/.claude/hooks; \
+    curl -fsSL https://raw.githubusercontent.com/MemPalace/mempalace/v${MEMPALACE_V}/hooks/mempal_precompact_hook.sh \
+        -o ${HOME}/.claude/hooks/mempal_precompact_hook.sh; \
+    curl -fsSL https://raw.githubusercontent.com/MemPalace/mempalace/v${MEMPALACE_V}/hooks/mempal_save_hook.sh \
+        -o ${HOME}/.claude/hooks/mempal_save_hook.sh; \
+    chmod +x ${HOME}/.claude/hooks/mempal_precompact_hook.sh \
+             ${HOME}/.claude/hooks/mempal_save_hook.sh; \
+    grep -q '^SAVE_INTERVAL=[0-9]' ${HOME}/.claude/hooks/mempal_save_hook.sh || \
+        { echo 'ERROR: SAVE_INTERVAL pattern not found in hook script'; exit 1; }; \         
+    sed -i 's/^SAVE_INTERVAL=[0-9]\+/SAVE_INTERVAL="${MEMPAL_SAVE_INTERVAL:-15}"/' ${HOME}/.claude/hooks/mempal_save_hook.sh; 
+    # https://github.com/MemPalace/mempalace/issues/1093
+    # claude plugin marketplace add MemPalace/mempalace@v${MEMPALACE_V};\
+    # claude plugin install --scope user mempalace
 
 # Claudio
 RUN chown -R claudio:0 ${HOME}; \
