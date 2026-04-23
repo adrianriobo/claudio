@@ -17,7 +17,7 @@
 FROM registry.access.redhat.com/ubi10@sha256:37d90a02d14afed06b6fff1ed0a33cd07b96187e90ed46d8871fdce550538b43 as preparer
 ARG TARGETARCH
 
-RUN dnf install -y git 
+# RUN dnf install -y git 
 
 
 # GCloud
@@ -31,35 +31,18 @@ RUN set -eux; \
     curl -L "$GCLOUD_URL" -o gcloud.tar.gz; \
     tar -xzf gcloud.tar.gz -C /opt;
 
-# Claudio Skills
-ARG CS_REF_TYPE
-ARG CS_REF
-# CS_CACHE_KEY is the resolved commit SHA — changing it invalidates the layer
-# cache so we always get fresh content when the remote ref updates.
-ARG CS_CACHE_KEY
-ENV CS_REPO https://github.com/aipcc-cicd/claudio-skills.git
-RUN set -eux; \
-    git init claudio-skills; \
-    cd claudio-skills; \
-    git remote add origin "${CS_REPO}"; \
-    if [ "${CS_REF_TYPE}" = "pr" ]; then \
-        git fetch --depth 1 origin "pull/${CS_REF}/head"; \
-    else \
-        git fetch --depth 1 origin "${CS_REF}"; \
-    fi; \
-    git checkout FETCH_HEAD;
-
 # Claudio image    
 FROM registry.access.redhat.com/ubi10/python-312-minimal@sha256:7350725154e3419463f815c5faae915de4dbf191cd4c3183dbc080ac6d1d5e0c
 
 ARG TARGETARCH
 USER root
-
-
 ENV HOME /home/claudio
 
 # Base for claudio image
-RUN microdnf install -y skopeo podman unzip gzip git; \
+# renovate: datasource=pypi depName=uv                    
+ENV UV_VERSION="0.7.2"
+RUN microdnf install -y skopeo podman unzip gzip git jq; \
+    pip install --no-cache-dir "uv>=${UV_VERSION}"; \
     useradd claudio 
     
 # Claude
@@ -81,23 +64,14 @@ RUN set -eux; \
 
 # Conf
 COPY conf/ ${HOME}/
-COPY scripts/ /usr/local/bin/
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY scripts/ entrypoint.sh /usr/local/bin/
 
 # Skills
-COPY --from=preparer /claudio-skills /home/claudio/claudio-skills
-RUN set -eux; \
-    for script in "${HOME}/claudio-skills"/claudio-plugin/tools/*/install.sh; do \
-        [ -f "$script" ] && bash "$script"; \
-    done; \
-    \
-    for req in "${HOME}/claudio-skills"/claudio-plugin/tools/python/*-requirements.txt; do \
-        [ -f "$req" ] && pip install --no-cache-dir -r "$req"; \
-    done; \
-    \
-    /usr/local/bin/generate-plugin-configs.sh \
-        "${HOME}/claudio-skills" \
-        "${HOME}/.claude/plugins"
+RUN claude plugin marketplace add opendatahub-io/ai-helpers; \
+    claude plugin install --scope user odh-ai-helpers; \
+    claude plugin marketplace add aipcc-cicd/claudio-skills; \
+    claude plugin install --scope user claudio-plugin; \
+    pt-manager.sh
 
 # Claudio
 RUN chown -R claudio:0 ${HOME}; \
